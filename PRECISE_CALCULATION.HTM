@@ -1,0 +1,173 @@
+﻿<!DOCTYPE HTML>
+<HTML>
+	<HEAD>
+        <META CHARSET="UTF-8" AUTHOR="MAGNETICON">
+		<TITLE>PreciseCalculation</TITLE>
+	</HEAD>
+	<BODY>
+		first number: <INPUT ID="IN1">
+		second number: <INPUT ID="IN2">
+		type of operation: <INPUT ID="IN3" VALUE="+">
+		output: <INPUT ID="OUT">
+		<INPUT TYPE="BUTTON" ID="B1" VALUE="RUN" ONCLICK="JAVASCRIPT: CALCULATE();">
+		<SCRIPT TYPE="TEXT/JAVASCRIPT">
+			function CALCULATE(){
+				var N1 = parseFloat(document.getElementById("IN1").value);
+				var N2 = parseFloat(document.getElementById("IN2").value);
+				document.getElementById("OUT").value = PreciseCalculation(N1, N2, document.getElementById("IN3").value);
+			}
+			function PreciseCalculation(NUM1, NUM2, TYPE){
+				//numbers are precise up to 15 digists
+				//we also need to watch out when multiplying and adding numbers to one other, as the result can overflow post 15 digit space
+				var MAX_NUM = 999999999999999.9;
+				var MAX_NUM_SIZE = 15;
+				var MULT_1 = 1;
+				var NUM_1 = NUM1;
+				var MULT_2 = 1;
+				var NUM_2 = NUM2;
+				var NUM_1_STR = NUM_1+"";
+				var NUM_2_STR = NUM_2+"";
+				var NUM_1_MANTISSA = NUM_1_STR.split(".");
+				var NUM_2_MANTISSA = NUM_2_STR.split(".");
+				var NUM_1_MOVE_LEFT_NEED = 0;
+				if (NUM_1_MANTISSA.length > 1) NUM_1_MOVE_LEFT_NEED = NUM_1_MANTISSA[1].length;
+				var NUM_2_MOVE_LEFT_NEED = 0;
+				var NUM_1_MATISSA_SIZE = NUM_1_MANTISSA[0].length;
+				var NUM_2_MATISSA_SIZE = NUM_2_MANTISSA[0].length;
+				if (NUM_2_MANTISSA.length > 1) NUM_2_MOVE_LEFT_NEED = NUM_2_MANTISSA[1].length;				
+				if (TYPE == '-' || TYPE == '+'){
+					if (TYPE == '+'){
+						NUM_1_MOVE_LEFT_NEED = Math.floor((MAX_NUM_SIZE-NUM_1_MATISSA_SIZE-NUM_2_MATISSA_SIZE)/2);
+						NUM_2_MOVE_LEFT_NEED = NUM_1_MOVE_LEFT_NEED;
+					}
+					else if (TYPE == '-'){
+						NUM_1_MOVE_LEFT_NEED = Math.floor(MAX_NUM_SIZE-Math.max(NUM_1_MATISSA_SIZE, NUM_2_MATISSA_SIZE));
+						NUM_2_MOVE_LEFT_NEED = NUM_1_MOVE_LEFT_NEED;
+					}
+				}
+				var FLOAT_SIZE_NUM_1 = NUM_1_MOVE_LEFT_NEED;
+				var FLOAT_SIZE_NUM_2 = NUM_2_MOVE_LEFT_NEED;
+				var MOVED_1 = 0;
+				var MOVED_2 = 0;
+				for (var i = 0; i < MAX_NUM_SIZE; i++){
+					if (NUM_1_MOVE_LEFT_NEED > 0){
+						var CANMOVE = false;
+						if (TYPE == '*' || TYPE == '+'){
+							if (NUM_1_MATISSA_SIZE+(MOVED_1+1)+NUM_2_MATISSA_SIZE <= MAX_NUM_SIZE) CANMOVE = true;
+						}
+						else if (NUM_1_MATISSA_SIZE+(MOVED_1+1) <= MAX_NUM_SIZE) CANMOVE = true;
+						if (CANMOVE){
+							NUM_1 = NUM_1*10;
+							MULT_1 = MULT_1*10;
+							MOVED_1 = MOVED_1+1;
+							NUM_1_MOVE_LEFT_NEED = NUM_1_MOVE_LEFT_NEED-1;
+						}
+					}
+					if (NUM_2_MOVE_LEFT_NEED > 0){
+						var CANMOVE = false;
+						if (TYPE == '*' || TYPE == '+'){
+							if (NUM_2_MATISSA_SIZE+(MOVED_2+1)+NUM_1_MATISSA_SIZE <= MAX_NUM_SIZE) CANMOVE = true;
+						}
+						else if (NUM_2_MATISSA_SIZE+(MOVED_2+1) <= MAX_NUM_SIZE) CANMOVE = true;
+						if (CANMOVE){
+							NUM_2 = NUM_2*10;
+							MULT_2 = MULT_2*10;
+							MOVED_2 = MOVED_2+1;
+							NUM_2_MOVE_LEFT_NEED = NUM_2_MOVE_LEFT_NEED-1;
+						}
+					}
+				}
+				if (NUM_1_MOVE_LEFT_NEED > 0){
+					NUM_1 = Math.round(NUM_1);
+				}
+				else if(TYPE == '/'){
+					for (var i = 0; i < MAX_NUM_SIZE; i++){
+						if (NUM_1_MATISSA_SIZE+MOVED_1+1 <= MAX_NUM_SIZE){
+							NUM_1 = NUM_1*10;
+							MULT_1 = MULT_1*10;
+							MOVED_1 = MOVED_1+1;
+						}
+					}
+				}
+				if (NUM_2_MOVE_LEFT_NEED > 0){
+					NUM_2 = Math.round(NUM_2);
+				}
+				var R = 0;
+				var MULT_1_STR = MULT_1+"";
+				var MULT_2_STR = MULT_2+"";
+				var MULT_LEN = (MULT_1_STR.length-1)+(MULT_2_STR.length-1);
+				switch(TYPE){
+					case '-':
+						R = NUM_1-NUM_2;
+						MULT_LEN = MULT_LEN/2;
+						break;	
+					case '+':
+						R = NUM_1+NUM_2;
+						MULT_LEN = MULT_LEN/2;
+						break;
+					case '/':
+						R = NUM_1/NUM_2;
+						console.log(R);
+						if (NUM_2_MANTISSA.length > 1) MULT_LEN = MULT_LEN-(2*FLOAT_SIZE_NUM_2);
+						break;
+					case '*':
+						R = NUM_1*NUM_2;
+						break;
+					default:
+						R = undefined;
+						break;
+				}
+				var STRR = R+"";
+				var DECPOS = STRR.split(".");
+				STRR = STRR.replace('.','');
+				var MOVELEFT = MULT_LEN;
+				if (DECPOS.length > 1) MOVELEFT = MOVELEFT+DECPOS[1].length;
+				var STRRNEW = "";
+				var c = STRR.length;
+				for (var i = 0; i < 100; i++){
+					c = c-1;
+					SET_NUM = "0";
+					var DOMOVE = false;
+					if (c >= 0){
+						SET_NUM = STRR[c];
+						DOMOVE = true;
+					}
+					else if (MOVELEFT > 0) DOMOVE = true;
+					if (DOMOVE){
+						STRRNEW = SET_NUM+""+STRRNEW;
+						if (MOVELEFT == 1) STRRNEW = "."+STRRNEW;
+						MOVELEFT = MOVELEFT-1;
+					}
+					else break;
+				}
+				if (STRRNEW[0] == '.') STRRNEW = "0"+STRRNEW;
+				var STREXP = "";
+				var FLOAT = false;
+				for (var i = 0; i < STRRNEW.length; i++){
+					if (STRRNEW[i] == '.') FLOAT = true;
+					if (i < STRRNEW.length-1 && STRRNEW[i] == '0' && STRRNEW[i+1] != '.' && (STREXP == "" || STREXP == '-')) continue;
+					else STREXP = STREXP+""+STRRNEW[i];
+				}
+				var STRRES = STREXP;
+				if (FLOAT){
+					STRRES = "";
+					var SKIPDOT = false;
+					var WASSKIPDOT = false;
+					for (var i = STREXP.length-1; i >= 0; i--){
+						if (SKIPDOT){
+							SKIPDOT = false;
+							WASSKIPDOT = true;
+							continue;
+						}
+						if (i > 0 && (!WASSKIPDOT) && STREXP[i] == '0' && STREXP[i-1] != '-' && STRRES == ""){
+							if (STREXP[i-1] == '.') SKIPDOT = true;
+							continue;
+						}
+						else STRRES = STREXP[i]+""+STRRES;;
+					}
+				}
+				return parseFloat(STRRES, 10);
+			}
+		</SCRIPT>
+	</BODY>
+</HTML>
